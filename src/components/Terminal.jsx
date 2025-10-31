@@ -3,6 +3,7 @@ import { bootLines } from '../data/installData.js';
 import Editor from './Editor.jsx';
 
 const BOOT_DELAY_MS = 120;
+const EXIT_DELAY_MS = BOOT_DELAY_MS * 2;
 
 const createFileSystem = (userData) => ({
   '/': {
@@ -117,6 +118,7 @@ function Terminal({ userData }) {
   const [input, setInput] = useState('');
   const [loggedIn, setLoggedIn] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
+  const [isTerminated, setIsTerminated] = useState(false);
   const [fileSystem, setFileSystem] = useState(null);
   const [currentDir, setCurrentDir] = useState('/');
   const [editorState, setEditorState] = useState({ mode: 'none', filePath: '', content: '' });
@@ -209,13 +211,27 @@ function Terminal({ userData }) {
             
           case 'exit':
             setLoggedIn(false);
-            setCurrentDir('/');
-            setFileSystem(null);
-            setUserPrompt(initialPrompt);
-            setHistory([
-              { text: "Debian GNU/Linux 12 debian tty1" },
-              { text: loginPrompt, prompt: true, type: 'login' }
-            ]);
+            setIsTerminated(true);
+            newHistory.push({ text: "logout" });
+            
+            const creditLines = [
+              { text: "[  OK  ] User session ended." },
+              { text: "Connection to debian closed." },
+              { text: " " },
+              { text: "This project was made by Dzadafa and Danipion under HIMA TRPL." },
+              { text: "[ Process terminated. Refresh the page to restart. ]", type: 'terminated' }
+            ];
+
+            const printCreditLines = (index) => {
+              if (index >= creditLines.length) return;
+              setTimeout(() => {
+                setHistory(prev => [...prev, creditLines[index]]);
+                printCreditLines(index + 1);
+              }, EXIT_DELAY_MS);
+            };
+            
+            printCreditLines(0);
+            setHistory(newHistory);
             setInput('');
             return;
             
@@ -393,18 +409,19 @@ function Terminal({ userData }) {
   }
 
   const lastLine = history.length > 0 ? history[history.length - 1] : {};
-  const showInlineInput = lastLine.prompt && (lastLine.type === 'command' || lastLine.type === 'login');
+  const showInlineInput = !isTerminated && lastLine.prompt && (lastLine.type === 'command' || lastLine.type === 'login');
 
   return (
     <div 
       ref={terminalRef} 
       onClick={focusInput} 
-      style={{ width: '100%', height: '95vh', overflowY: 'auto' }}
       className="terminal-container"
     >
       {history.map((line, index) => (
-        <div key={index} style={{ display: 'flex' }}>
-          <pre>
+        <div key={index} className="terminal-history-line">
+          <pre 
+            className={line.type === 'terminated' ? 'terminated-text' : ''}
+          >
             {line.text}
           </pre>
           {showInlineInput && index === history.length - 1 && (
