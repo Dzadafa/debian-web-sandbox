@@ -70,16 +70,16 @@ export const installSteps = [
     title: "Debian Installer",
     text: "Select a language.",
     type: "options",
-    options: ["English", "French", "German", "Spanish"],
-    default: "English",
-    error: "Selected language isn't available. Please select 'English'."
+    options: ["English", "Indonesian", "French", "German", "Spanish"],
+    default: ["English", "Indonesian"],
+    error: "Selected language isn't available. Please select 'English' or 'Indonesian'."
   },
   {
     title: "Debian Installer",
     text: "Select your location.",
     type: "options",
-    options: ["United States", "United Kingdom", "Canada", "Other"],
-    default: "United States",
+    options: ["United States", "Indonesia", "United Kingdom", "Canada", "Other"],
+    default: ["United States", "Indonesia"],
     error: "Selected location isn't available."
   },
   {
@@ -87,7 +87,7 @@ export const installSteps = [
     text: "Configure the keyboard.",
     type: "options",
     options: ["American English", "British English", "Canadian French"],
-    default: "American English",
+    default: ["American English"],
     error: "Selected keyboard layout isn't available."
   },
   {

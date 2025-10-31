@@ -17,7 +17,9 @@ const installLogMap = {
 function App() {
   const [currentStep, setCurrentStep] = useState(0);
   const [inputValue, setInputValue] = useState('');
-  const [selectedOption, setSelectedOption] = useState(installSteps[0].default);
+  const [selectedOption, setSelectedOption] = useState(
+    Array.isArray(installSteps[0].default) ? installSteps[0].default[0] : installSteps[0].default
+  );
   const [stepError, setStepError] = useState('');
   const [showTerminal, setShowTerminal] = useState(false);
   const [userData, setUserData] = useState({});
@@ -36,7 +38,8 @@ function App() {
             inputRef.current.focus();
         }
       } else if (step.type === 'options') {
-        setSelectedOption(step.default);
+        const defaultOption = Array.isArray(step.default) ? step.default[0] : step.default;
+        setSelectedOption(defaultOption);
         setStepError('');
         if (optionListRef.current) {
             optionListRef.current.focus();
@@ -74,13 +77,24 @@ function App() {
 
   const handleNext = () => {
     if (step.type === 'options') {
-      if (selectedOption !== step.default) {
+      const isValid = Array.isArray(step.default)
+        ? step.default.includes(selectedOption)
+        : selectedOption === step.default;
+      
+      if (!isValid) {
         setStepError(step.error || "This option is not available.");
         return;
       }
     }
 
     if (step.type === 'input' && step.key) {
+      if (step.key === 'partitionSize') {
+        const size = parseFloat(inputValue);
+        if (isNaN(size) || size < 4 || size > 12) {
+          setStepError("Please enter a size between 4 and 12 GB.");
+          return;
+        }
+      }
       setUserData(prev => ({ ...prev, [step.key]: inputValue }));
     }
 
