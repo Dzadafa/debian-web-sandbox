@@ -23,14 +23,6 @@ body.terminal-mode {
   color: #d0d0d0;
 }
 
-.terminal-container {
-  padding: 1rem;
-}
-
-.text-editor {
-  height: 90dvh;
-}
-
 #root {
   display: flex;
   align-items: center;
@@ -171,6 +163,22 @@ body.terminal-mode {
   color: #0000aa;
 }
 
+.terminal-container {
+  width: 100%;
+  height: 96vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 5px 10px;
+}
+
+.terminal-container::-webkit-scrollbar {
+  display: none;
+}
+
+.terminal-history-line {
+  display: flex;
+}
+
 pre {
   margin: 0;
   padding: 0;
@@ -189,4 +197,60 @@ input.terminal-input {
   width: 70%;
   caret-color: #d0d0d0;
   padding: 0;
+}
+
+/* .credit-text { */
+/*   color: #c0c0c0; */
+/*   width: 100%; */
+/*   text-align: center; */
+/*   padding: 0.25rem 0; */
+/* } */
+
+.terminated-text {
+  color: #ff8080;
+  /* width: 100%; */
+  /* text-align: left; */
+  /* padding-top: 1rem; */
+}
+
+.editor-container {
+  background-color: #00002a;
+  color: #ffffff;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Consolas', 'Menlo', 'Courier New', monospace;
+}
+
+.editor-header {
+  background-color: #bbbbbb;
+  color: #000000;
+  padding: 2px 5px;
+  font-weight: bold;
+}
+
+.editor-textarea {
+  flex-grow: 1;
+  width: 100%;
+  background-color: transparent;
+  color: #ffffff;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: 1.1rem;
+  padding: 5px;
+  scrollbar-width: none;
+}
+
+.editor-textarea::-webkit-scrollbar {
+  display: none;
+}
+
+.editor-footer {
+  background-color: #bbbbbb;
+  color: #000000;
+  padding: 2px 5px;
+  font-weight: bold;
 }
