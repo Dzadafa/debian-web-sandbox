@@ -10,6 +10,7 @@ import {
 
 const BOOT_DELAY_MS = 120;
 const EXIT_DELAY_MS = BOOT_DELAY_MS * 2;
+const CHALLENGE_KEY = "DEBIAN_SANDBOX_CHALLENGE_COMPLETE";
 
 const createFileSystem = (userData) => ({
   "/": {
@@ -120,6 +121,8 @@ function Terminal({ userData, skipBoot = false }) {
   const checkChallengeProgress = (currentFs, currentDir) => {
     if (!isChallengeMode) return;
 
+    const wasIncomplete = challengeTasks.some((task) => !task.completed);
+
     let allDone = true;
     const newTasks = challengeTasks.map((task) => {
       if (task.completed) return task;
@@ -132,22 +135,7 @@ function Terminal({ userData, skipBoot = false }) {
 
     setChallengeTasks(newTasks);
 
-    if (allDone) {
-      setTimeout(G(), 500);
-    }
-  };
-
-  const G = () => {
-    setHistory((prev) => [
-      ...prev,
-      { text: "----------------------------------------" },
-      { text: "🎉 CHALLENGE COMPLETE! Great job! 🎉" },
-      { text: "----------------------------------------" },
-      { text: userPrompt, prompt: true, type: "command" },
-    ]);
-    setIsChallengeMode(false);
-
-    setChallengeTasks(getInitialChallengeTasks(homeDir));
+    return wasIncomplete && allDone;
   };
 
   const inputRef = useRef(null);
@@ -216,6 +204,28 @@ function Terminal({ userData, skipBoot = false }) {
         if (loggedIn) {
           newHistory[newHistory.length - 1] = { text: `${userPrompt}${input}` };
 
+          const hasCompleted = localStorage.getItem(CHALLENGE_KEY) === "true";
+          const isForce = args.includes("--force");
+
+          if (command === "chall" && hasCompleted && !isForce) {
+            newHistory.push({
+              text: "You finished this chall! If u need play again add --force.",
+            });
+            newHistory.push({ text: "ex: chall --force" });
+            newHistory.push({
+              text: userPrompt,
+              prompt: true,
+              type: "command",
+            });
+            setHistory(newHistory);
+            setInput("");
+            return;
+          }
+
+          if (command === "chall" && isForce) {
+            localStorage.removeItem(CHALLENGE_KEY);
+          }
+
           const currentState = {
             fileSystem: fileSystem,
             currentDir: currentDir,
@@ -234,10 +244,27 @@ function Terminal({ userData, skipBoot = false }) {
           setUserPrompt(result.userPrompt);
           if (result.startChallenge) {
             setIsChallengeMode(true);
+            localStorage.removeItem(CHALLENGE_KEY);
             setChallengeTasks(getInitialChallengeTasks(homeDir));
           }
 
-          checkChallengeProgress(result.fileSystem, result.currentDir);
+          const didComplete = checkChallengeProgress(
+            result.fileSystem,
+            result.currentDir
+          );
+
+          if (didComplete) {
+            newHistory.push({
+              text: "----------------------------------------",
+            });
+            newHistory.push({ text: "🎉 CHALLENGE COMPLETE! Great job! 🎉" });
+            newHistory.push({
+              text: "----------------------------------------",
+            });
+            localStorage.setItem(CHALLENGE_KEY, "true");
+            setIsChallengeMode(false);
+            setChallengeTasks(getInitialChallengeTasks(homeDir));
+          }
 
           if (result.clear) {
             setHistory([
@@ -429,13 +456,23 @@ function Terminal({ userData, skipBoot = false }) {
     const newFs = setFsNode(fileSystem, filePath, newContent);
     setFileSystem(newFs);
 
-    setHistory((prev) => [
-      ...prev,
-      { text: `File "${filePath}" saved.` },
-      { text: userPrompt, prompt: true, type: "command" },
-    ]);
+    let newHistory = [...history, { text: `File "${filePath}" saved.` }];
+
+    const didComplete = checkChallengeProgress(newFs, currentDir);
+
+    if (didComplete) {
+      newHistory.push({ text: "----------------------------------------" });
+      newHistory.push({ text: "🎉 CHALLENGE COMPLETE! Great job! 🎉" });
+      newHistory.push({ text: "----------------------------------------" });
+      localStorage.setItem(CHALLENGE_KEY, "true");
+      setIsChallengeMode(false);
+      setChallengeTasks(getInitialChallengeTasks(homeDir));
+    }
+
+    newHistory.push({ text: userPrompt, prompt: true, type: "command" });
+
+    setHistory(newHistory);
     setEditorState({ mode: "none", filePath: "", content: "" });
-    checkChallengeProgress(newFs, currentDir);
   };
 
   const focusInput = () => {
