@@ -167,13 +167,13 @@ export const installSteps = [
   },
   {
     title: "Installing System",
-    text: "Installing the base system... (this is simulated)",
+    text: "Installing the base system...",
     type: "installing",
     logKey: "system",
   },
   {
     title: "Installing GRUB",
-    text: "Installing GRUB boot loader... (this is simulated)",
+    text: "Installing GRUB boot loader...",
     type: "installing",
     logKey: "grub",
   },

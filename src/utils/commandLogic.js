@@ -521,6 +521,9 @@ export const processCommand = (command, args, state) => {
     }
 
     case "deploy-portfolio": {
+      const APPS_SCRIPT_URL =
+        "https://script.google.com/macros/s/AKfycbw12aEYUyEtqkg4e-SIoapXH7go5MQFWNDEC_uT9-EIabcalh3LMotn7HSW-c_YfvDi/exec";
+
       const envPath = "/var/www/html/.env";
       const envNode = getDirNode(envPath, fileSystem);
 
@@ -546,6 +549,32 @@ export const processCommand = (command, args, state) => {
         break;
       }
 
+      result.history.push(
+        "Connecting to data-warehouse (api.sheets.google.com)..."
+      );
+      result.history.push("Saving configuration...");
+
+      // 2. Buat payload untuk dikirim
+      const payload = {
+        slug: slug,
+        envContent: envNode,
+        username: userData.username || "user",
+      };
+
+      // 3. Kirim data ke Apps Script (ini terjadi di latar belakang)
+      // Kita tidak menggunakan 'await' agar simulasi terminal tidak 'freeze'
+      fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors", // Penting untuk Apps Script agar tidak error CORS
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }).catch((err) => {
+        // Di dunia nyata, kita akan menangani error ini
+        console.error("Error sending to Apps Script:", err);
+      });
+
       const nginxConfig = `
 server {
     listen 80;
@@ -567,16 +596,12 @@ server {
       );
       result.fileSystem = newFs;
 
-      result.history.push(
-        "Connecting to data-warehouse (api.sheets.google.com)..."
-      );
-      result.history.push("Saving configuration... OK.");
-
       result.deployment = {
         slug: slug,
         envContent: envNode,
       };
 
+      result.history.push("Saving... OK.");
       result.history.push(" ");
       result.history.push("Deployment successful!");
       result.history.push(`View at: /result/${slug}`);
