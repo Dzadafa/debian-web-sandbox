@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+
+:root{
+  --roboto-mono: font-family: "Roboto Mono", monospace;
+}
+
 body {
   background-color: #0000aa;
   color: #eeeeee;
@@ -180,6 +186,15 @@ body.terminal-mode {
   display: flex;
 }
 
+.terminal-history-line pre,
+input.terminal-input {
+  font-family: "Consolas", "Menlo", "Courier New", monospace;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  font-weight: normal;
+  letter-spacing: normal;
+}
+
 pre {
   margin: 0;
   padding: 0;
@@ -192,10 +207,8 @@ input.terminal-input {
   background-color: transparent;
   color: #d0d0d0;
   border: none;
-  font-family: "Consolas", "Menlo", "Courier New", monospace;
-  font-size: 1.1rem;
   outline: none;
-  width: 70%;
+  flex-grow: 1;
   caret-color: #d0d0d0;
   padding: 0;
 }
@@ -313,5 +326,9 @@ input.terminal-input {
 
   .terminal-container {
     padding-top: 0;
+  }
+
+  input.terminal-input{
+    padding-left: 10px;
   }
 }
