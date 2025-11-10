@@ -67,6 +67,7 @@ function Sanbox() {
 
   const [userData, setUserData] = useState(null);
   const [installLog, setInstallLog] = useState([]);
+  const [isPartitioned, setIsPartitioned] = useState(false);
 
   const [viewMode, setViewMode] = useState("loading");
   const [portfolioSlug, setPortfolioSlug] = useState("");
@@ -102,6 +103,9 @@ function Sanbox() {
 
   useEffect(() => {
     if (step) {
+      if (step.type !== "partitionMenu") {
+        setIsPartitioned(false);
+      }
       if (step.type === "input") {
         setInputValue(step.default || "");
         if (inputRef.current) {
@@ -159,6 +163,13 @@ function Sanbox() {
       }
     }
 
+    if (step.type === "partitionMenu" && !isPartitioned) {
+      setStepError(
+        "No partition scheme has been created. Use 'Guided partitioning'."
+      );
+      return;
+    }
+
     if (step.type === "input" && step.key) {
       if (step.key === "partitionSize") {
         const size = parseFloat(inputValue);
@@ -185,7 +196,7 @@ function Sanbox() {
 
   const handlePartitionComplete = (partitionSize) => {
     setUserData((prev) => ({ ...prev, partitionSize: partitionSize }));
-    handleNext();
+    setIsPartitioned(true);
   };
 
   const handleInputSubmit = (e) => {
@@ -324,7 +335,8 @@ function Sanbox() {
               (step.type === "input" && !inputRef.current)
             }
             disabled={
-              step.type === "installing" || step.type === "partitionMenu"
+              step.type === "installing" ||
+              (step.type === "partitionMenu" && !isPartitioned)
             }
           >
             &lt;Continue&gt;
