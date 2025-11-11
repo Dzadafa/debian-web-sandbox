@@ -202,7 +202,7 @@ body.terminal-mode {
 .terminal-history-line pre,
 input.terminal-input {
   font-family: "Consolas", "Menlo", "Courier New", monospace;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   line-height: 1.2;
   font-weight: normal;
   letter-spacing: normal;
@@ -342,6 +342,6 @@ input.terminal-input {
   }
 
   input.terminal-input{
-    padding-left: 10px;
+    padding-left: .55em;
   }
 }
