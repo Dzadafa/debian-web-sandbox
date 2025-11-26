@@ -46,7 +46,7 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
       const event = new KeyboardEvent("keydown", { key: c, code: c, ctrlKey: true, bubbles: true, cancelable: true });
       el.dispatchEvent(event);
       window.dispatchEvent(event);
-      setIsCtrlActiveGlobal(false);
+      window.dispatchEvent(new CustomEvent("ctrl-toggle", { detail: false }));
     };
     el.addEventListener("beforeinput", handleBeforeInput);
     return () => el.removeEventListener("beforeinput", handleBeforeInput);
@@ -105,6 +105,30 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
     if (terminalRef.current) terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
   }, [history]);
 
+  useEffect(() => {
+    const inputEl = inputRef.current;
+
+    const handlePaste = (e) => {
+      if (isAnimating) {
+        e.preventDefault();
+        return;
+      }
+      e.preventDefault();
+      const pastedText = e.clipboardData.getData('text/plain');
+      setInput(prevInput => prevInput + pastedText);
+    };
+
+    if (inputEl) {
+      inputEl.addEventListener('paste', handlePaste);
+    }
+
+    return () => {
+      if (inputEl) {
+        inputEl.removeEventListener('paste', handlePaste);
+      }
+    };
+  }, [isAnimating, history]);
+
   const runAnimatedCommand = (lines, finalPrompt) => {
     setIsAnimating(true);
     let i = 0;
@@ -120,20 +144,15 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
     }, 50);
   };
 
-  const handleInput = (e) => {
-    if (isAnimating) return;
-    switch (e.key) {
-      case "Enter": {
-        e.preventDefault();
-        const t = input.trim();
+  const executeCommand = (cmdStr) => {
+        const t = cmdStr.trim();
         if (t !== "") setCommandHistory(prev => [...prev, t]);
         setHistoryIndex(-1);
-        const last = history[history.length - 1];
         let newHistory = [...history];
         const [cmd, ...args] = t.split(" ");
         if (loggedIn) {
           if (!isFsLoaded) return;
-          newHistory[newHistory.length - 1] = { text: `${userPrompt}${input}` };
+          newHistory[newHistory.length - 1] = { text: `${userPrompt}${cmdStr}` };
           const hasCompleted = localStorage.getItem(CHALLENGE_KEY) === "true";
           const isForce = args.includes("--force");
           if (cmd === "chall" && hasCompleted && !isForce) {
@@ -186,7 +205,7 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
           setChallengeTasks(p.newTasks);
           if (p.justCompleted) {
             newHistory.push({ text: "----------------------------------------" });
-            newHistory.push({ text: "🎉 CHALLENGE COMPLETE! Great job! 🎉" });
+            newHistory.push({ text: "脂 CHALLENGE COMPLETE! Great job! 脂" });
             newHistory.push({ text: "----------------------------------------" });
             localStorage.setItem(CHALLENGE_KEY, "true");
             setIsChallengeMode(false);
@@ -229,8 +248,8 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
           }
           newHistory.push({ text: result.userPrompt, prompt: true, type: "command" });
         } else {
-          newHistory[newHistory.length - 1] = { text: `${loginPrompt}${input}` };
-          if (input === userData.username) {
+          newHistory[newHistory.length - 1] = { text: `${loginPrompt}${cmdStr}` };
+          if (cmdStr === userData.username) {
             setLoggedIn(true);
             newHistory = [newHistory[newHistory.length - 1], { text: `Welcome, ${userData.username}!` }];
           } else {
@@ -240,6 +259,14 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
         }
         setHistory(newHistory);
         setInput("");
+  }
+
+  const handleInput = (e) => {
+    if (isAnimating) return;
+    switch (e.key) {
+      case "Enter": {
+        e.preventDefault();
+        executeCommand(input);
         break;
       }
       case "ArrowUp": {
@@ -299,6 +326,51 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
         }
         break;
       }
+      case 'C':
+      case 'c':
+        if (e.ctrlKey) {
+          e.preventDefault();
+          let newHistory = [...history];
+          newHistory[newHistory.length - 1] = { text: `${userPrompt}${input}^C` };
+          newHistory.push({ text: userPrompt, prompt: true, type: "command" });
+          setHistory(newHistory);
+          setInput("");
+        }
+        break;
+      case 'V':
+      case 'v':
+        if (e.ctrlKey) {
+          e.preventDefault();
+          if (navigator.clipboard && navigator.clipboard.readText) {
+             navigator.clipboard.readText()
+               .then(text => setInput(prev => prev + text))
+               .catch(err => console.error("Clipboard read failed:", err));
+          }
+        }
+        break;
+      case 'L':
+      case 'l':
+        if (e.ctrlKey) {
+          e.preventDefault();
+          setHistory([{ text: userPrompt, prompt: true, type: "command" }]);
+        }
+        break;
+      case 'D':
+      case 'd':
+        if (e.ctrlKey) {
+          e.preventDefault();
+          if (input === "") {
+             executeCommand("exit");
+          }
+        }
+        break;
+      case 'U':
+      case 'u':
+        if (e.ctrlKey) {
+          e.preventDefault();
+          setInput("");
+        }
+        break;
       default:
         break;
     }
@@ -314,7 +386,7 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
     setChallengeTasks(p.newTasks);
     if (p.justCompleted) {
       newHistory.push({ text: "----------------------------------------" });
-      newHistory.push({ text: "🎉 CHALLENGE COMPLETE! Great job! 🎉" });
+      newHistory.push({ text: "脂 CHALLENGE COMPLETE! Great job! 脂" });
       newHistory.push({ text: "----------------------------------------" });
       localStorage.setItem(CHALLENGE_KEY, "true");
       setIsChallengeMode(false);
@@ -365,6 +437,8 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
                 <input
                   ref={inputRef}
                   type="text"
+                  name="terminal-cmd"
+                  id="terminal-input"
                   className="terminal-input"
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -374,6 +448,9 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
                   autoComplete="off"
                   autoCorrect="off"
                   spellCheck="false"
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                 />
               )}
             </div>
@@ -385,4 +462,3 @@ function Terminal({ userData, startLoggedIn, onDeploy, onFullReset }) {
 }
 
 export default Terminal;
-
