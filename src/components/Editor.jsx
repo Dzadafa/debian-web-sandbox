@@ -37,6 +37,14 @@ function Editor({ mode, filePath, initialContent, onExit }) {
         onChange={(e) => setContent(e.target.value)}
         spellCheck="false"
         className="editor-textarea"
+        name="editor-content"
+        id="editor-textarea"
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect="off"
+        data-form-type="other"
+        data-lpignore="true"
+        data-1p-ignore="true"
       />
       <div className="editor-footer">{footerText}</div>
     </div>

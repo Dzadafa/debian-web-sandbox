@@ -4,7 +4,23 @@ import "./MobileControls.css";
 function MobileControls() {
   const [isCtrlActive, setIsCtrlActive] = useState(false);
 
+  useEffect(() => {
+    const handler = (e) => setIsCtrlActive(e.detail);
+    window.addEventListener("ctrl-toggle", handler);
+    return () => window.removeEventListener("ctrl-toggle", handler);
+  }, []);
+
+  // Helper to find the active input
+  const getTarget = () => {
+    return document.getElementById("terminal-input") || document.getElementById("editor-textarea");
+  };
+
   const dispatchKeyEvent = (key, ctrl = false) => {
+    const target = getTarget() || window;
+
+    // Explicitly focus the input to keep the keyboard open
+    if (target.focus) target.focus();
+
     const event = new KeyboardEvent("keydown", {
       key,
       code: key,
@@ -13,19 +29,24 @@ function MobileControls() {
       cancelable: true,
     });
 
-    const active = document.activeElement || window;
-    active.dispatchEvent(event);
-    if (active !== window) window.dispatchEvent(event);
+    target.dispatchEvent(event);
 
-    if (isCtrlActive) setIsCtrlActive(false);
+    if (isCtrlActive) {
+      window.dispatchEvent(new CustomEvent("ctrl-toggle", { detail: false }));
+    }
   };
 
   const handleKey = (key) => {
     if (key === "Control") {
       const next = !isCtrlActive;
-      setIsCtrlActive(next);
       window.dispatchEvent(new CustomEvent("ctrl-toggle", { detail: next }));
-    } else dispatchKeyEvent(key);
+      
+      // Explicitly focus input when Ctrl is clicked too
+      const target = getTarget();
+      if (target && target.focus) target.focus();
+    } else {
+      dispatchKeyEvent(key);
+    }
   };
 
   useEffect(() => {
@@ -46,22 +67,47 @@ function MobileControls() {
     };
   }, []);
 
+  // Helper to handle pointer up events (fires on release, allowing scroll to cancel it)
+  const handlePointerUp = (e, key) => {
+    e.preventDefault();
+    handleKey(key);
+  };
+
   return (
     <div className="mobile-controls">
       <div className="mobile-key-group">
-        <button className={`mobile-btn ${isCtrlActive ? "active" : ""}`} onPointerDown={e => { e.preventDefault(); handleKey("Control"); }}>Ctrl</button>
-        <button className="mobile-btn" onPointerDown={e => { e.preventDefault(); handleKey("Tab"); }}>Tab</button>
-        <button className="mobile-btn" onPointerDown={e => { e.preventDefault(); handleKey("Enter"); }}>Enter</button>
+        <button 
+          className={`mobile-btn ${isCtrlActive ? "active" : ""}`} 
+          onPointerUp={(e) => handlePointerUp(e, "Control")}
+        >
+          Ctrl
+        </button>
+        
+        {!isCtrlActive ? (
+          <>
+            <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "Tab")}>Tab</button>
+            <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "Enter")}>Enter</button>
+          </>
+        ) : (
+          <>
+            <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "c")}>C</button>
+            <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "v")}>V</button>
+            <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "x")}>X</button>
+            <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "l")}>L</button>
+            <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "u")}>U</button>
+            <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "d")}>D</button>
+          </>
+        )}
       </div>
-      <div className="mobile-key-group">
-        <button className="mobile-btn" onPointerDown={e => { e.preventDefault(); handleKey("ArrowLeft"); }}>&larr;</button>
-        <button className="mobile-btn" onPointerDown={e => { e.preventDefault(); handleKey("ArrowUp"); }}>&uarr;</button>
-        <button className="mobile-btn" onPointerDown={e => { e.preventDefault(); handleKey("ArrowDown"); }}>&darr;</button>
-        <button className="mobile-btn" onPointerDown={e => { e.preventDefault(); handleKey("ArrowRight"); }}>&rarr;</button>
-      </div>
+
+      {!isCtrlActive && (
+        <div className="mobile-key-group">
+          <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "ArrowUp")}>&uarr;</button>
+          <button className="mobile-btn" onPointerUp={(e) => handlePointerUp(e, "ArrowDown")}>&darr;</button>
+        </div>
+      )}
     </div>
   );
 }
 
 export default MobileControls;
-
